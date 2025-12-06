@@ -1,0 +1,26 @@
+# Dossiers temporaires
+/vendor/
+node_modules/
+vendor/
+
+# Cache, sessions, logs
+cache/
+logs/
+tmp/
+*.log
+
+# Configs locales (si tu as ça)
+.env
+.env.local
+
+# Fichiers de l'IDE
+.vscode/
+.idea/
+*.iml
+
+# Fichiers système
+.DS_Store
+Thumbs.db
+
+# Dossier spécifique à Wamp (si tu copies des trucs)
+wamp64/
