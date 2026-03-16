@@ -1,5 +1,5 @@
 <?php
-require_once "../config/auth.php";
+require_once "../config/auth_admin.php";
 require_once "../config/db.php";
 
 // 1) Récupérer la liste des catégories pour la liste déroulante

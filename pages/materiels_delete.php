@@ -1,5 +1,5 @@
 <?php
-require_once "../config/auth.php";
+require_once "../config/auth_admin.php";
 require_once "../config/db.php";
 
 $messageErreur = "";
@@ -51,40 +51,168 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <head>
     <meta charset="UTF-8">
     <title>Suppression d'un matériel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Police + icônes -->
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- CSS vif & moderne -->
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
 
-<h1>Suppression d'un matériel</h1>
+<div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="logo">
+            <span class="logo-icon"><i class="fa-solid fa-laptop-code"></i></span>
+            <span class="logo-text">Parc IT</span>
+        </div>
 
-<div class="menu">
-    <a href="dashboard.php" class="btn">Dashboard</a>
-    <a href="materiels_list.php" class="btn active">Matériel</a>
-    <a href="categories_list.php" class="btn">Catégories</a>
-    <a href="utilisateurs_list.php" class="btn">Utilisateurs</a>
-    <a href="affectations_list.php" class="btn">Affectations</a>
-    <a href="pannes_list.php" class="btn">Pannes</a>
-    <a href="../logout.php" class="btn">Déconnexion</a>
+        <nav class="menu">
+            <a href="dashboard.php" class="menu-item">
+                <i class="fa-solid fa-chart-line"></i><span>Dashboard</span>
+            </a>
+            <a href="materiels_list.php" class="menu-item active">
+                <i class="fa-solid fa-computer"></i><span>Matériels</span>
+            </a>
+            <a href="affectations_list.php" class="menu-item">
+                <i class="fa-solid fa-people-arrows"></i><span>Affectations</span>
+            </a>
+            <a href="pannes_list.php" class="menu-item">
+                <i class="fa-solid fa-triangle-exclamation"></i><span>Pannes</span>
+            </a>
+            <a href="categories_list.php" class="menu-item">
+                <i class="fa-solid fa-layer-group"></i><span>Catégories</span>
+            </a>
+            <a href="utilisateurs_list.php" class="menu-item">
+                <i class="fa-solid fa-users"></i><span>Utilisateurs</span>
+            </a>
+            <a href="../logout.php" class="menu-item">
+                <i class="fa-solid fa-right-from-bracket"></i><span>Déconnexion</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <button class="btn-toggle-sidebar" id="btn-toggle-sidebar">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="topbar-title">
+                <h1>Suppression d'un matériel</h1>
+                <p>Confirmation avant suppression définitive de l'équipement</p>
+            </div>
+
+            <div class="topbar-actions">
+                <button class="btn-mode" id="btn-mode">
+                    <i class="fa-solid fa-moon"></i>
+                    <span>Mode sombre</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- CONTENU -->
+        <main class="content">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Détail du matériel</h2>
+                    <a href="materiels_list.php" class="btn-primary">
+                        <i class="fa-solid fa-arrow-left"></i> Retour à la liste
+                    </a>
+                </div>
+
+                <div class="panel-body">
+
+                    <?php if (!empty($messageErreur)): ?>
+                        <div style="
+                            margin-bottom: .9rem;
+                            padding: .6rem .8rem;
+                            border-radius: .8rem;
+                            border: 1px solid rgba(239,68,68,0.7);
+                            background: rgba(127,29,29,0.4);
+                            color: #fecaca;
+                            font-size: .82rem;
+                        ">
+                            <i class="fa-solid fa-circle-exclamation" style="margin-right:.4rem;"></i>
+                            <?= htmlspecialchars($messageErreur) ?>
+                        </div>
+                        <a href="materiels_list.php" class="btn-mode">
+                            ← Retour à la liste
+                        </a>
+                    <?php else: ?>
+
+                        <div style="
+                            margin-bottom: 1rem;
+                            padding:.8rem .95rem;
+                            border-radius:1rem;
+                            border:1px solid rgba(234,179,8,0.8);
+                            background: radial-gradient(circle at left, rgba(250,204,21,0.25), rgba(15,23,42,0.95));
+                            color:#fef9c3;
+                            font-size:.85rem;
+                        ">
+                            <div style="display:flex; align-items:flex-start; gap:.6rem;">
+                                <i class="fa-solid fa-triangle-exclamation" style="margin-top:.15rem;"></i>
+                                <div>
+                                    <strong>Attention :</strong> cette action va supprimer définitivement ce matériel
+                                    du parc informatique. Cette opération est irréversible.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-bottom: 1rem; font-size:.85rem;">
+                            <p style="margin-bottom:.3rem;">
+                                <strong>Code inventaire :</strong>
+                                <?= htmlspecialchars($materiel["code_inventaire"]) ?>
+                            </p>
+                            <p style="margin-bottom:.3rem;">
+                                <strong>Désignation :</strong>
+                                <?= htmlspecialchars($materiel["designation"]) ?>
+                            </p>
+                            <?php if (!empty($materiel["localisation"])): ?>
+                                <p style="margin-bottom:.3rem;">
+                                    <strong>Localisation :</strong>
+                                    <?= htmlspecialchars($materiel["localisation"]) ?>
+                                </p>
+                            <?php endif; ?>
+                            <?php if (!empty($materiel["etat"])): ?>
+                                <p style="margin-bottom:.3rem;">
+                                    <strong>État actuel :</strong>
+                                    <?= htmlspecialchars($materiel["etat"]) ?>
+                                </p>
+                            <?php endif; ?>
+                        </div>
+
+                        <form method="post" style="margin-top:.8rem;">
+                            <p style="font-size:.85rem; margin-bottom:.7rem;">
+                                Confirmez-vous la suppression de ce matériel ?
+                            </p>
+                            <div style="display:flex; gap:.6rem;">
+                                <button type="submit" class="btn-primary"
+                                        style="background: linear-gradient(135deg,#ef4444,#f97316); box-shadow:0 16px 40px rgba(239,68,68,0.9);">
+                                    <i class="fa-solid fa-trash-can"></i> Oui, supprimer
+                                </button>
+                                <a href="materiels_list.php" class="btn-mode">
+                                    Annuler
+                                </a>
+                            </div>
+                        </form>
+
+                    <?php endif; ?>
+
+                </div>
+            </section>
+        </main>
+    </div>
 </div>
 
-<div class="form-card">
-    <?php if (!empty($messageErreur)): ?>
-        <p style="color:red;"><?= htmlspecialchars($messageErreur) ?></p>
-        <p>
-            <a href="materiels_list.php" class="btn">← Retour à la liste</a>
-        </p>
-    <?php else: ?>
-        <p>Vous êtes sur le point de supprimer le matériel suivant :</p>
-        <p><strong>Code :</strong> <?= htmlspecialchars($materiel["code_inventaire"]) ?></p>
-        <p><strong>Désignation :</strong> <?= htmlspecialchars($materiel["designation"]) ?></p>
-
-        <form method="post">
-            <p>Confirmez-vous la suppression ?</p>
-            <button type="submit" class="btn primary">Oui, supprimer</button>
-            <a href="materiels_list.php" class="btn">Annuler</a>
-        </form>
-    <?php endif; ?>
-</div>
-
+<!-- JS -->
+<script src="../assets/js/app.js"></script>
 </body>
 </html>

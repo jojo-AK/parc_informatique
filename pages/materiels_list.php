@@ -2,6 +2,9 @@
 require_once "../config/auth.php";
 require_once "../config/db.php";
 
+// Rôle courant (admin ou viewer)
+$role = $_SESSION["user_role"] ?? "admin";
+$isViewer = ($role === "viewer");
 
 // Récupérer les catégories pour le filtre
 $sqlCat = "SELECT id_categorie, nom_categorie FROM categorie ORDER BY nom_categorie";
@@ -12,6 +15,12 @@ $categories = $stmtCat->fetchAll(PDO::FETCH_ASSOC);
 $q            = trim($_GET["q"] ?? "");
 $filtreEtat   = $_GET["etat"] ?? "";
 $filtreCat    = $_GET["id_categorie"] ?? "";
+
+// Compter combien de filtres sont actifs (pour affichage)
+$nbFiltresActifs = 0;
+if ($q !== "")          $nbFiltresActifs++;
+if ($filtreEtat !== "") $nbFiltresActifs++;
+if ($filtreCat !== "")  $nbFiltresActifs++;
 
 // Construire la requête avec conditions dynamiques
 $sql = "SELECT m.id_materiel,
@@ -56,10 +65,12 @@ $stmt->execute($params);
 $materiels = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Statistiques rapides
-$totalMateriel = count($materiels);
-$totalDispo    = 0;
-$totalAffecte  = 0;
-$totalPanne    = 0;
+$totalMateriel   = count($materiels);
+$totalDispo      = 0;
+$totalAffecte    = 0;
+$totalPanne      = 0;
+$totalMaint      = 0;
+$totalHorsServ   = 0;
 
 foreach ($materiels as $m) {
     switch ($m["etat"]) {
@@ -72,6 +83,12 @@ foreach ($materiels as $m) {
         case "panne":
             $totalPanne++;
             break;
+        case "maintenance":
+            $totalMaint++;
+            break;
+        case "hors_service":
+            $totalHorsServ++;
+            break;
     }
 }
 ?>
@@ -82,7 +99,7 @@ foreach ($materiels as $m) {
     <title>Parc Informatique - Matériels</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Police Google (optionnelle) -->
+    <!-- Police Google -->
     <link rel="preconnect" href="https://fonts.gstatic.com">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
@@ -103,30 +120,37 @@ foreach ($materiels as $m) {
         </div>
 
         <nav class="menu">
-            <a href="dashboard.php" class="menu-item">
-                <i class="fa-solid fa-chart-line"></i>
-                <span>Dashboard</span>
-            </a>
+            <?php if (!$isViewer): ?>
+                <a href="dashboard.php" class="menu-item">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+            <?php endif; ?>
+
             <a href="materiels_list.php" class="menu-item active">
                 <i class="fa-solid fa-computer"></i>
                 <span>Matériels</span>
             </a>
-            <a href="categories_list.php" class="menu-item">
-                <i class="fa-solid fa-layer-group"></i>
-                <span>Catégories</span>
-            </a>
-            <a href="utilisateurs_list.php" class="menu-item">
-                <i class="fa-solid fa-users"></i>
-                <span>Utilisateurs</span>
-            </a>
-            <a href="affectations_list.php" class="menu-item">
-                <i class="fa-solid fa-people-arrows"></i>
-                <span>Affectations</span>
-            </a>
-            <a href="pannes_list.php" class="menu-item">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <span>Pannes</span>
-            </a>
+
+            <?php if (!$isViewer): ?>
+                <a href="categories_list.php" class="menu-item">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Catégories</span>
+                </a>
+                <a href="utilisateurs_list.php" class="menu-item">
+                    <i class="fa-solid fa-users"></i>
+                    <span>Utilisateurs</span>
+                </a>
+                <a href="affectations_list.php" class="menu-item">
+                    <i class="fa-solid fa-people-arrows"></i>
+                    <span>Affectations</span>
+                </a>
+                <a href="pannes_list.php" class="menu-item">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Pannes</span>
+                </a>
+            <?php endif; ?>
+
             <a href="../logout.php" class="menu-item">
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Déconnexion</span>
@@ -144,7 +168,7 @@ foreach ($materiels as $m) {
 
             <div class="topbar-title">
                 <h1>Matériels</h1>
-                <p>Gestion et suivi de l'inventaire</p>
+                <p>Gestion et suivi de l'inventaire du parc</p>
             </div>
 
             <div class="topbar-actions">
@@ -182,12 +206,12 @@ foreach ($materiels as $m) {
 
                 <div class="card card-gradient-3">
                     <div class="card-header">
-                        <span>Affectés / En panne</span>
+                        <span>Affectés / Incidents</span>
                         <i class="fa-solid fa-plug-circle-exclamation"></i>
                     </div>
                     <div class="card-body">
-                        <h2><?= (int)$totalAffecte ?> / <?= (int)$totalPanne ?></h2>
-                        <p>Affectés & matériels en panne</p>
+                        <h2><?= (int)$totalAffecte ?> / <?= (int)($totalPanne + $totalMaint + $totalHorsServ) ?></h2>
+                        <p>Affectés & matériels en panne / maintenance / HS</p>
                     </div>
                 </div>
             </section>
@@ -196,9 +220,11 @@ foreach ($materiels as $m) {
             <section class="panel">
                 <div class="panel-header">
                     <h2>Filtrer les matériels</h2>
-                    <a href="materiels_add.php" class="btn-primary">
-                        <i class="fa-solid fa-plus"></i> Nouveau matériel
-                    </a>
+                    <?php if (!$isViewer): ?>
+                        <a href="materiels_add.php" class="btn-primary">
+                            <i class="fa-solid fa-plus"></i> Nouveau matériel
+                        </a>
+                    <?php endif; ?>
                 </div>
 
                 <div class="panel-body">
@@ -210,11 +236,11 @@ foreach ($materiels as $m) {
 
                         <select name="etat">
                             <option value="">-- Tous les états --</option>
-                            <option value="disponible"  <?= $filtreEtat === "disponible" ? "selected" : "" ?>>Disponible</option>
-                            <option value="affecte"     <?= $filtreEtat === "affecte" ? "selected" : "" ?>>Affecté</option>
-                            <option value="panne"       <?= $filtreEtat === "panne" ? "selected" : "" ?>>Panne</option>
-                            <option value="maintenance" <?= $filtreEtat === "maintenance" ? "selected" : "" ?>>Maintenance</option>
-                            <option value="hors_service"<?= $filtreEtat === "hors_service" ? "selected" : "" ?>>Hors service</option>
+                            <option value="disponible"   <?= $filtreEtat === "disponible"   ? "selected" : "" ?>>Disponible</option>
+                            <option value="affecte"      <?= $filtreEtat === "affecte"      ? "selected" : "" ?>>Affecté</option>
+                            <option value="panne"        <?= $filtreEtat === "panne"        ? "selected" : "" ?>>Panne</option>
+                            <option value="maintenance"  <?= $filtreEtat === "maintenance"  ? "selected" : "" ?>>Maintenance</option>
+                            <option value="hors_service" <?= $filtreEtat === "hors_service" ? "selected" : "" ?>>Hors service</option>
                         </select>
 
                         <select name="id_categorie">
@@ -234,6 +260,13 @@ foreach ($materiels as $m) {
                             Réinitialiser
                         </a>
                     </form>
+
+                    <?php if ($nbFiltresActifs > 0): ?>
+                        <p style="font-size:.78rem; margin-top:.4rem; color:rgba(209,213,219,0.9);">
+                            <i class="fa-solid fa-sliders" style="margin-right:.3rem;"></i>
+                            <?= $nbFiltresActifs ?> filtre<?= $nbFiltresActifs > 1 ? "s" : "" ?> appliqué<?= $nbFiltresActifs > 1 ? "s" : "" ?>.
+                        </p>
+                    <?php endif; ?>
                 </div>
             </section>
 
@@ -252,14 +285,16 @@ foreach ($materiels as $m) {
                                 <th>Catégorie</th>
                                 <th>État</th>
                                 <th>Localisation</th>
-                                <th>Actions</th>
+                                <?php if (!$isViewer): ?>
+                                    <th>Actions</th>
+                                <?php endif; ?>
                             </tr>
                             </thead>
                             <tbody>
                             <?php if (empty($materiels)): ?>
                                 <tr>
-                                    <td colspan="6" style="text-align: center; padding: 1rem;">
-                                        Aucun matériel trouvé.
+                                    <td colspan="<?= $isViewer ? 5 : 6 ?>" style="text-align: center; padding: 1rem;">
+                                        Aucun matériel trouvé avec ces critères.
                                     </td>
                                 </tr>
                             <?php else: ?>
@@ -294,16 +329,20 @@ foreach ($materiels as $m) {
                                             <span class="badge <?= $badgeClass ?>"><?= $label ?></span>
                                         </td>
                                         <td><?= htmlspecialchars($m["localisation"] ?? "") ?></td>
-                                        <td>
-                                            <a href="materiels_edit.php?id=<?= urlencode($m["id_materiel"]) ?>" class="btn-table">
-                                                <i class="fa-solid fa-pen"></i>
-                                            </a>
-                                            <a href="materiels_delete.php?id=<?= urlencode($m["id_materiel"]) ?>"
-                                               class="btn-table btn-danger"
-                                               onclick="return confirm('Supprimer ce matériel ?');">
-                                                <i class="fa-solid fa-trash"></i>
-                                            </a>
-                                        </td>
+
+                                        <?php if (!$isViewer): ?>
+                                            <td>
+                                                <a href="materiels_edit.php?id=<?= urlencode($m["id_materiel"]) ?>" class="btn-table" title="Modifier">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </a>
+                                                <a href="materiels_delete.php?id=<?= urlencode($m["id_materiel"]) ?>"
+                                                   class="btn-table btn-danger"
+                                                   title="Supprimer"
+                                                   onclick="return confirm('Supprimer ce matériel ?');">
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </a>
+                                            </td>
+                                        <?php endif; ?>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -314,9 +353,11 @@ foreach ($materiels as $m) {
             </section>
 
             <!-- Bouton flottant -->
-            <button class="fab" onclick="window.location.href='materiels_add.php'">
-                <i class="fa-solid fa-plus"></i>
-            </button>
+            <?php if (!$isViewer): ?>
+                <button class="fab" onclick="window.location.href='materiels_add.php'">
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+            <?php endif; ?>
         </main>
     </div>
 </div>
