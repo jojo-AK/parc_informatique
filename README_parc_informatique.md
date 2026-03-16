@@ -161,7 +161,7 @@ parc_informatique/
 
 ## 👤 Auteur
 
-**Joseph** — Étudiant en informatique (ASI)
+**Joseph** — Étudiant en informatique (IA/BIG DATA)
 
 ---
 
