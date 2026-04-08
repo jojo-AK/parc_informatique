@@ -1,17 +1,10 @@
 <?php
-// Paramètres de connexion
-$host = "localhost";              // WAMP en local
-$dbname = "parc_informatique_db"; // Le nom de la base qu'on a créée
-$user = "root";                   // Utilisateur par défaut de WAMP
-$pass = "";                       // Mot de passe vide par défaut sur WAMP
+$dbPath = __DIR__ . "/../database/parc_informatique.db";
 
 try {
-    // Construction de la chaîne de connexion (DSN)
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
-
-    // On active le mode d'erreur pour voir les problèmes SQL
+    $pdo = new PDO("sqlite:" . $dbPath);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo->exec("PRAGMA foreign_keys = ON;");
 } catch (PDOException $e) {
-    // Si la connexion échoue, on arrête tout et on affiche l'erreur
     die("Erreur de connexion : " . $e->getMessage());
 }

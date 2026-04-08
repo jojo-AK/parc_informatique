@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php --version)",
+      "Bash(php -r ':*)",
+      "Bash(php -r \"echo extension_loaded\\('pdo_sqlite'\\) ? 'SQLite OK' : 'SQLite ABSENT';\")",
+      "Bash(php config/init_sqlite.php)"
+    ]
+  }
+}
